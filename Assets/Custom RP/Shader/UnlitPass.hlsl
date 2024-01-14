@@ -13,6 +13,7 @@ struct Attributes
 struct Varyings
 {
     float4 positionCS : SV_POSITION;
+    float3 positionWS : VAR_POSITION;
     float2 baseUV : VAR_BASE_UV;
 	UNITY_VERTEX_INPUT_INSTANCE_ID
 };
@@ -23,8 +24,8 @@ Varyings UnlitPassVertex(Attributes input)
     UNITY_SETUP_INSTANCE_ID(input);
     UNITY_TRANSFER_INSTANCE_ID(input, output);
     
-    float3 positionWS = TransformObjectToWorld(input.positionOS);
-    output.positionCS = TransformWorldToHClip(positionWS);
+    output.positionWS = TransformObjectToWorld(input.positionOS);
+    output.positionCS = TransformWorldToHClip(output.positionWS);
 	
     float4 baseST = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseMap_ST);
     output.baseUV = input.baseUV * baseST.xy + baseST.zw;
