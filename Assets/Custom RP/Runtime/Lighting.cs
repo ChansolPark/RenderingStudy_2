@@ -9,11 +9,13 @@ public class Lighting
     static int
         dirLightCountId = Shader.PropertyToID("_DirectionalLightCount"),
         dirLightColorsId = Shader.PropertyToID("_DirectionalLightColors"),
-        dirLightDirectionsId = Shader.PropertyToID("_DirectionalLightDirections");
+        dirLightDirectionsId = Shader.PropertyToID("_DirectionalLightDirections"),
+        dirLightShadowDataId = Shader.PropertyToID("_DirectionalLightShadowData");
 
     static Vector4[]
         dirLightColors = new Vector4[maxDirLightCount],
-        dirLightDirections = new Vector4[maxDirLightCount];
+        dirLightDirections = new Vector4[maxDirLightCount],
+        dirLightShadowData = new Vector4[maxDirLightCount];
 
     const string bufferName = "Lighting";
 
@@ -23,12 +25,15 @@ public class Lighting
     };
 
     CullingResults cullingResults;
+    Shadows shadows = new Shadows();
 
-    public void Setup(ScriptableRenderContext context, CullingResults cullingResults)
+    public void Setup(ScriptableRenderContext context, CullingResults cullingResults, ShadowSettings shadowSettings)
     {
         this.cullingResults = cullingResults;
         this.buffer.BeginSample(bufferName);
+        this.shadows.Setup(context, cullingResults, shadowSettings);
         this.SetupLights();
+        this.shadows.Render();
         this.buffer.EndSample(bufferName);
         context.ExecuteCommandBuffer(this.buffer);
         this.buffer.Clear();
@@ -54,11 +59,18 @@ public class Lighting
         this.buffer.SetGlobalInt(dirLightCountId, visibleLights.Length);
         this.buffer.SetGlobalVectorArray(dirLightColorsId, dirLightColors);
         this.buffer.SetGlobalVectorArray(dirLightDirectionsId, dirLightDirections);
+        this.buffer.SetGlobalVectorArray(dirLightShadowDataId, dirLightShadowData);
     }
 
     void SetupDirectionalLight(int index, ref VisibleLight visibleLight)
     {
         dirLightColors[index] = visibleLight.finalColor;
         dirLightDirections[index] = -visibleLight.localToWorldMatrix.GetColumn(2);
+        dirLightShadowData[index] = this.shadows.ReserveDirectionalShadows(visibleLight.light, index);
+    }
+
+    public void Cleanup()
+    {
+        this.shadows.Cleanup();
     }
 }
