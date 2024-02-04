@@ -4,6 +4,23 @@ using UnityEngine.Rendering;
 
 public class CustomShaderGUI : ShaderGUI
 {
+    enum ShadowMode
+    {
+        On, Clip, Dither, Off
+    }
+
+    ShadowMode Shadows
+    {
+        set
+        {
+            if (this.SetProperty("_Shadows", (float)value))
+            {
+                this.SetKeyword("_SHADOWS_CLIP", value == ShadowMode.Clip);
+                this.SetKeyword("_SHADOWS_DITHER", value == ShadowMode.Dither);
+            }
+        }
+    }
+
     MaterialEditor editor;
     Object[] materials;
     MaterialProperty[] properties;
@@ -14,6 +31,8 @@ public class CustomShaderGUI : ShaderGUI
         MaterialEditor materialEditor, MaterialProperty[] properties
     )
     {
+        EditorGUI.BeginChangeCheck();
+
         base.OnGUI(materialEditor, properties);
         this.editor = materialEditor;
         this.materials = materialEditor.targets;
@@ -27,6 +46,11 @@ public class CustomShaderGUI : ShaderGUI
             this.ClipPreset();
             this.FadePreset();
             this.TransparentPreset();
+        }
+
+        if (EditorGUI.EndChangeCheck())
+        {
+            this.SetShadowCasterPass();
         }
     }
     bool HasPremultiplyAlpha => this.HasProperty("_PremulAlpha");
@@ -104,6 +128,21 @@ public class CustomShaderGUI : ShaderGUI
             {
                 m.renderQueue = (int)value;
             }
+        }
+    }
+
+    void SetShadowCasterPass()
+    {
+        MaterialProperty shadows = FindProperty("_Shadows", this.properties, false);
+        if (shadows == null || shadows.hasMixedValue)
+        {
+            return;
+        }
+
+        bool enabled = shadows.floatValue < (float)ShadowMode.Off;
+        foreach (Material m in this.materials)
+        {
+            m.SetShaderPassEnabled("ShadowCaster", enabled);
         }
     }
 
