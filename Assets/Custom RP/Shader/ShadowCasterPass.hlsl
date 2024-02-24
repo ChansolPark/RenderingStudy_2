@@ -3,9 +3,6 @@
 
 #include "../ShaderLibrary/Common.hlsl"
 
-TEXTURE2D(_BaseMap);
-SAMPLER(sampler_BaseMap);
-
 struct Attributes
 {
     float3 positionOS : POSITION;

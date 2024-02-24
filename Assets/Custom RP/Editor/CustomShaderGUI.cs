@@ -38,6 +38,8 @@ public class CustomShaderGUI : ShaderGUI
         this.materials = materialEditor.targets;
         this.properties = properties;
 
+        this.BakedEmission();
+
         EditorGUILayout.Space();
         this.showPresets = EditorGUILayout.Foldout(this.showPresets, "Presets", true);
         if (this.showPresets)
@@ -51,8 +53,42 @@ public class CustomShaderGUI : ShaderGUI
         if (EditorGUI.EndChangeCheck())
         {
             this.SetShadowCasterPass();
+            this.CopyLightMappingProperties();
         }
     }
+
+    void CopyLightMappingProperties()
+    {
+        MaterialProperty mainTex = FindProperty("_MainTex", this.properties, false);
+        MaterialProperty baseMap = FindProperty("_BaseMap", this.properties, false);
+        if (mainTex != null && baseMap != null)
+        {
+            mainTex.textureValue = baseMap.textureValue;
+            mainTex.textureScaleAndOffset = baseMap.textureScaleAndOffset;
+        }
+        MaterialProperty color = FindProperty("_Color", this.properties, false);
+        MaterialProperty baseColor =
+            FindProperty("_BaseColor", this.properties, false);
+        if (color != null && baseColor != null)
+        {
+            color.colorValue = baseColor.colorValue;
+        }
+    }
+
+    void BakedEmission()
+    {
+        EditorGUI.BeginChangeCheck();
+        this.editor.LightmapEmissionProperty();
+        if (EditorGUI.EndChangeCheck())
+        {
+            foreach (Material m in this.editor.targets)
+            {
+                m.globalIlluminationFlags &=
+                    ~MaterialGlobalIlluminationFlags.EmissiveIsBlack;
+            }
+        }
+    }
+
     bool HasPremultiplyAlpha => this.HasProperty("_PremulAlpha");
 
     bool HasProperty(string name) =>
